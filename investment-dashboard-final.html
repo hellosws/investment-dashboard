@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>매크로 리스크 투자관리 대시보드</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg-page:#e8edf3; --bg-card:#fff; --bg-alt:#f8fafc; --bg-hover:#f1f5f9;
+      --border:#e2e8f0; --border-light:#f1f5f9;
+      --ink:#0f172a; --ink2:#1e293b; --sub:#64748b; --muted:#94a3b8; --faint:#cbd5e1;
+      --blue:#2563eb; --blue-l:#dbeafe; --blue-m:#93c5fd;
+      --teal:#0891b2; --teal-l:#cffafe;
+      --green:#059669; --green-l:#d1fae5;
+      --red:#dc2626; --red-l:#fee2e2;
+      --amber:#d97706; --amber-l:#fef3c7;
+      --slate:#475569;
+      --r-sm:8px; --r-md:14px; --r-lg:20px; --r-xl:28px;
+      --sh-sm:0 1px 3px rgba(15,23,42,.06),0 1px 2px rgba(15,23,42,.04);
+      --sh-md:0 4px 16px rgba(15,23,42,.08),0 2px 4px rgba(15,23,42,.04);
+      --sh-lg:0 12px 40px rgba(15,23,42,.10),0 4px 12px rgba(15,23,42,.06);
+      --font-d:'Outfit',sans-serif; --font-b:'Noto Sans KR',sans-serif; --font-m:'DM Mono',monospace;
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--font-b);background:var(--bg-page);color:var(--ink);min-height:100vh;line-height:1.6}
+    body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle at 1px 1px,rgba(37,99,235,.05) 1px,transparent 0);background-size:28px 28px;pointer-events:none;z-index:0}
+    body::after{content:'';position:fixed;top:0;left:0;right:0;height:300px;background:linear-gradient(160deg,#e0ebff 0%,#f0f7ff 40%,transparent 100%);pointer-events:none;z-index:0}
+    .wrap{position:relative;z-index:1;max-width:1160px;margin:0 auto;padding:28px 20px 100px}
+
+    /* Cards */
+    .card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--sh-sm);overflow:hidden;transition:box-shadow .2s,transform .2s}
+    .card:hover{box-shadow:var(--sh-md);transform:translateY(-1px)}
+    .card-head{display:flex;justify-content:space-between;align-items:center;padding:16px 22px;border-bottom:1px solid var(--border-light);background:var(--bg-alt)}
+    .card-head h2{font-family:var(--font-d);font-size:14px;font-weight:600;color:var(--ink2)}
+    .card-body{padding:20px 22px}
+
+    /* Badges */
+    .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;font-family:var(--font-d)}
+    .b-blue{background:var(--blue-l);color:var(--blue)} .b-teal{background:var(--teal-l);color:var(--teal)}
+    .b-green{background:var(--green-l);color:var(--green)} .b-red{background:var(--red-l);color:var(--red)}
+    .b-amber{background:var(--amber-l);color:var(--amber)} .b-slate{background:#f1f5f9;color:var(--slate)}
+
+    /* Buttons */
+    .btn{display:inline-flex;align-items:center;gap:6px;border:none;border-radius:var(--r-sm);padding:9px 18px;font-family:var(--font-d);font-size:13px;font-weight:600;cursor:pointer;transition:all .18s}
+    .btn-primary{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.25)}
+    .btn-primary:hover{background:#1d4ed8;transform:translateY(-1px);box-shadow:0 4px 14px rgba(37,99,235,.35)}
+    .btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
+    .btn-outline{background:#fff;color:var(--ink2);border:1px solid var(--border);box-shadow:var(--sh-sm)}
+    .btn-outline:hover{background:var(--bg-hover);border-color:var(--blue-m)}
+    .btn-sm{padding:6px 13px;font-size:12px;border-radius:6px}
+
+    /* Section label */
+    .slabel{display:flex;align-items:center;gap:8px;font-family:var(--font-d);font-size:11px;font-weight:700;color:var(--blue);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px}
+    .slabel::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--blue-m),transparent);opacity:.4}
+
+    /* Grids */
+    .g2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+    .g5{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+    @media(max-width:900px){.g2{grid-template-columns:1fr}}
+    @media(max-width:600px){.g5{grid-template-columns:repeat(3,1fr)}}
+    .gap{margin-bottom:26px}
+
+    /* 업데이트 버튼 로딩 상태 */
+    #refreshBtn.loading{opacity:.7;pointer-events:none}
+    #refreshBtn.loading::before{content:'';display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;margin-right:6px}
+
+    /* Animations */
+    @keyframes slideDown{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.75)}}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* ── HEADER ── */
+    #s-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:32px;padding:20px 26px;background:#fff;border:1px solid var(--border);border-radius:var(--r-xl);box-shadow:var(--sh-md);animation:slideDown .5s ease both;flex-wrap:wrap;gap:14px}
+    .h-logo{display:flex;align-items:center;gap:14px}
+    .h-icon{width:44px;height:44px;background:linear-gradient(135deg,var(--blue),var(--teal));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 4px 12px rgba(37,99,235,.3)}
+    .h-logo h1{font-family:var(--font-d);font-size:19px;font-weight:800;color:var(--ink);letter-spacing:-.5px}
+    .h-logo h1 span{color:var(--blue)} .h-logo p{font-size:12px;color:var(--sub);margin-top:2px}
+    .h-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .h-live{display:flex;align-items:center;gap:6px;font-family:var(--font-m);font-size:11px;color:var(--teal);background:var(--teal-l);border:1px solid rgba(8,145,178,.2);border-radius:20px;padding:5px 12px}
+    .live-dot{width:7px;height:7px;background:var(--teal);border-radius:50%;animation:pulse 2s infinite}
+    .h-date{font-family:var(--font-m);font-size:12px;color:var(--muted);background:var(--bg-alt);border:1px solid var(--border);border-radius:8px;padding:5px 12px}
+
+    /* ── SUMMARY BAR ── */
+    #s-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:26px;animation:fadeUp .5s .02s ease both}
+    .si{background:#fff;border:1px solid var(--border);border-radius:var(--r-md);padding:18px 20px;box-shadow:var(--sh-sm);position:relative;overflow:hidden;transition:all .2s}
+    .si:hover{transform:translateY(-2px);box-shadow:var(--sh-md)}
+    .si::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+    .si-blue::before{background:linear-gradient(90deg,var(--blue),var(--teal))} .si-red::before{background:var(--red)}
+    .si-green::before{background:var(--green)} .si-amber::before{background:var(--amber)}
+    .si-label{font-size:11px;color:var(--sub);font-family:var(--font-d);font-weight:600;letter-spacing:.3px}
+    .si-val{font-family:var(--font-d);font-size:22px;font-weight:800;color:var(--ink);margin-top:4px;line-height:1}
+    .si-sub{font-size:11px;color:var(--muted);margin-top:4px;font-family:var(--font-m)}
+    @media(max-width:700px){#s-summary{grid-template-columns:1fr 1fr}}
+
+    /* ── RISK GAUGE ── */
+    #s-gauge{animation:fadeUp .5s .05s ease both}
+    .gauge-outer{padding:26px;display:grid;grid-template-columns:1fr auto;gap:28px;align-items:center}
+    .gauge-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-family:var(--font-m);margin-bottom:8px}
+    .gauge-track{position:relative;height:14px;border-radius:7px;background:linear-gradient(90deg,#10b981,#f59e0b 50%,#ef4444);box-shadow:inset 0 2px 4px rgba(0,0,0,.1)}
+    .gauge-needle{position:absolute;top:50%;transform:translate(-50%,-50%);width:22px;height:22px;background:#fff;border-radius:50%;border:3px solid var(--red);box-shadow:0 2px 10px rgba(220,38,38,.35),0 0 0 4px rgba(220,38,38,.1);transition:left 1s cubic-bezier(.34,1.56,.64,1)}
+    .gauge-score-box{text-align:center;background:linear-gradient(135deg,#fff5f5,#fff);border:2px solid var(--red-l);border-radius:var(--r-md);padding:16px 22px;min-width:105px}
+    .gauge-score{font-family:var(--font-d);font-size:42px;font-weight:800;color:var(--red);line-height:1}
+    .gauge-score-lbl{font-family:var(--font-d);font-size:13px;font-weight:600;color:var(--red);margin-top:4px}
+    .gauge-tags{display:flex;flex-wrap:wrap;gap:8px;padding:0 26px 22px}
+
+    /* ── SUPPLY ── */
+    #s-supply{animation:fadeUp .5s .08s ease both}
+    .sup-list{display:flex;flex-direction:column;justify-content:space-around;height:100%;gap:0}
+    .sup-row{display:flex;align-items:center;gap:8px;font-size:13px;white-space:nowrap;overflow:hidden;flex:1;padding:4px 0}
+    .sup-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .sup-name{color:var(--sub);width:38px;flex-shrink:0;font-family:var(--font-d);font-weight:600}
+    .sup-val{font-family:var(--font-m);font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .val-up{color:var(--red)} .val-dn{color:var(--blue)}
+    .supply-form{background:var(--bg-alt);border:1px solid var(--border);border-radius:var(--r-md);padding:18px;margin-top:18px}
+    .supply-form h3{font-family:var(--font-d);font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:14px}
+    .form-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+    .form-group label{display:block;font-size:11px;font-weight:600;color:var(--sub);font-family:var(--font-d);margin-bottom:5px}
+    .form-group input{width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:6px;font-family:var(--font-m);font-size:13px;color:var(--ink);background:#fff;outline:none;transition:border-color .2s}
+    .form-group input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+    .ai-comment{margin-top:14px;padding:14px 16px;background:linear-gradient(135deg,#eff6ff,#f0f9ff);border:1px solid var(--blue-l);border-radius:var(--r-md);font-size:13px;color:var(--ink2);line-height:1.7;min-height:52px}
+    @media(max-width:600px){.form-row{grid-template-columns:1fr 1fr}}
+
+    /* ── NEWS ── */
+    #s-news{animation:fadeUp .5s .11s ease both}
+    .news-card{padding:13px 0;border-bottom:1px solid var(--border-light);cursor:pointer;transition:all .15s}
+    .news-card:last-child{border-bottom:none}
+    .news-card:hover{padding-left:8px}
+    .news-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+    .news-title{font-size:13px;font-weight:500;color:var(--ink2);line-height:1.5}
+    .news-impact{margin-top:6px}
+    .news-date{font-family:var(--font-m);font-size:11px;color:var(--muted)}
+    .news-loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:30px;color:var(--sub);font-size:13px}
+    .spinner{width:18px;height:18px;border:2px solid var(--faint);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite}
+
+    /* ── ALLOCATION ── */
+    #s-alloc{animation:fadeUp .5s .14s ease both}
+    .alloc-card{background:#fff;border:1.5px solid var(--border);border-radius:var(--r-md);padding:18px 12px;text-align:center;position:relative;overflow:hidden;box-shadow:var(--sh-sm);transition:all .2s}
+    .alloc-card:hover{transform:translateY(-4px);box-shadow:var(--sh-md)}
+    .alloc-bar{position:absolute;top:0;left:0;right:0;height:4px;border-radius:2px 2px 0 0}
+    .alloc-emoji{font-size:26px;margin-bottom:8px}
+    .alloc-name{font-size:12px;color:var(--sub);margin-bottom:6px;font-family:var(--font-d)}
+    .alloc-pct{font-family:var(--font-d);font-size:26px;font-weight:800;color:var(--ink);line-height:1}
+    .alloc-dir{font-size:12px;margin-top:6px;font-family:var(--font-m);padding:3px 8px;border-radius:4px;display:inline-block}
+    .scenario-btns{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+    .scen-btn{padding:7px 14px;border-radius:20px;font-size:12px;font-weight:600;font-family:var(--font-d);cursor:pointer;border:1.5px solid var(--border);background:#fff;color:var(--sub);transition:all .2s}
+    .scen-btn:hover,.scen-btn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+    /* ── SECTOR ── */
+    #s-sector{animation:fadeUp .5s .17s ease both}
+    .sector-tabs{display:flex;gap:6px;background:var(--bg-alt);padding:5px;border-radius:10px;width:fit-content;margin-bottom:18px;border:1px solid var(--border)}
+    .stab{padding:7px 18px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--sub);font-family:var(--font-d);transition:all .18s}
+    .stab.active{background:#fff;color:var(--blue);box-shadow:var(--sh-sm)}
+    .sec-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border-light);font-size:13px;cursor:pointer;transition:background .15s;border-radius:6px}
+    .sec-row:last-child{border-bottom:none}
+    .sec-row:hover{background:var(--bg-alt);padding-left:8px}
+    .sec-name{width:110px;color:var(--ink2);font-weight:500}
+    .sec-bw{flex:1;height:7px;background:var(--bg-page);border-radius:4px;overflow:hidden}
+    .sec-b{height:100%;border-radius:4px;transition:width .8s ease}
+    .sec-pct{width:34px;text-align:right;font-family:var(--font-m);font-size:12px;font-weight:500}
+    .sec-dir{width:60px;text-align:center;font-size:11px;font-weight:700;font-family:var(--font-d)}
+
+    /* sector popup */
+    .sec-popup-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.4);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+    .sec-popup-overlay.open{display:flex}
+    .sec-popup{background:#fff;border-radius:var(--r-xl);padding:28px;width:90%;max-width:420px;box-shadow:var(--sh-lg);animation:fadeUp .25s ease}
+    .sec-popup h3{font-family:var(--font-d);font-size:18px;font-weight:700;margin-bottom:16px;color:var(--ink)}
+    .sec-popup p{font-size:14px;color:var(--ink2);line-height:1.7;margin-bottom:10px}
+    .sec-popup .close-btn{margin-top:18px;width:100%}
+
+    /* ── AI ADVISOR ── */
+    #s-advisor{background:#fff;border:1.5px solid var(--blue-l);border-radius:var(--r-xl);box-shadow:0 8px 32px rgba(37,99,235,.08);overflow:hidden;animation:fadeUp .5s .2s ease both}
+    .adv-head{background:linear-gradient(135deg,#eff6ff,#f0f9ff);padding:20px 26px;border-bottom:1px solid var(--blue-l);display:flex;justify-content:space-between;align-items:center}
+    .adv-head h2{font-family:var(--font-d);font-size:15px;font-weight:700;color:var(--blue)}
+    .adv-head p{font-size:12px;color:var(--sub);margin-top:3px}
+    .adv-badge{background:linear-gradient(135deg,var(--blue),var(--teal));color:#fff;font-family:var(--font-m);font-size:11px;padding:6px 14px;border-radius:20px;box-shadow:0 2px 8px rgba(37,99,235,.3)}
+    .ptf-area{padding:18px 26px;border-bottom:1px solid var(--border-light);background:var(--bg-alt)}
+    .ptf-area label{display:block;font-size:12px;font-weight:600;color:var(--sub);font-family:var(--font-d);margin-bottom:7px}
+    .ptf-area textarea{width:100%;background:#fff;border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px 14px;font-family:var(--font-b);font-size:13px;color:var(--ink);resize:vertical;min-height:72px;outline:none;transition:border-color .2s;line-height:1.6}
+    .ptf-area textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+    .chat-win{min-height:200px;max-height:380px;overflow-y:auto;padding:18px 26px;display:flex;flex-direction:column;gap:12px}
+    .chat-win::-webkit-scrollbar{width:4px}
+    .chat-win::-webkit-scrollbar-thumb{background:var(--faint);border-radius:2px}
+    .msg{max-width:84%;animation:fadeUp .3s ease}
+    .msg-user{align-self:flex-end}
+    .msg-ai{align-self:flex-start}
+    .msg-lbl{font-size:11px;color:var(--muted);margin-bottom:4px;font-family:var(--font-d);font-weight:600}
+    .msg-user .msg-lbl{text-align:right}
+    .msg-bubble{padding:11px 15px;border-radius:14px;font-size:13px;line-height:1.7}
+    .msg-user .msg-bubble{background:var(--blue);color:#fff;border-radius:14px 14px 4px 14px}
+    .msg-ai .msg-bubble{background:var(--bg-alt);border:1px solid var(--border);color:var(--ink2);border-radius:14px 14px 14px 4px}
+    .typing-dots{display:flex;gap:4px;align-items:center;padding:12px 15px;background:var(--bg-alt);border:1px solid var(--border);border-radius:14px 14px 14px 4px;width:fit-content}
+    .typing-dots span{width:7px;height:7px;background:var(--muted);border-radius:50%;animation:pulse 1.2s infinite}
+    .typing-dots span:nth-child(2){animation-delay:.2s}
+    .typing-dots span:nth-child(3){animation-delay:.4s}
+    .quick-wrap{display:flex;flex-wrap:wrap;gap:8px;padding:0 26px 14px}
+    .quick-btn{padding:6px 13px;border-radius:20px;font-size:12px;font-weight:600;font-family:var(--font-d);cursor:pointer;border:1.5px solid var(--blue-l);background:#fff;color:var(--blue);transition:all .15s}
+    .quick-btn:hover{background:var(--blue);color:#fff;border-color:var(--blue)}
+    .chat-bar{display:flex;gap:10px;padding:14px 26px;border-top:1px solid var(--border-light);background:var(--bg-alt)}
+    .chat-bar input{flex:1;border:1.5px solid var(--border);border-radius:var(--r-sm);padding:10px 16px;font-family:var(--font-b);font-size:13px;color:var(--ink);background:#fff;outline:none;transition:border-color .2s}
+    .chat-bar input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+    .chat-bar input::placeholder{color:var(--muted)}
+
+    /* ── API KEY SETUP ── */
+    .api-setup{padding:18px 26px;background:linear-gradient(135deg,#fff7ed,#fffbf0);border-bottom:1px solid #fed7aa}
+    .api-setup p{font-size:12px;color:#92400e;margin-bottom:8px;font-family:var(--font-d);font-weight:500}
+    .api-row{display:flex;gap:8px}
+    .api-row input{flex:1;padding:8px 12px;border:1.5px solid #fed7aa;border-radius:6px;font-family:var(--font-m);font-size:12px;outline:none;background:#fff}
+    .api-row input:focus{border-color:var(--amber)}
+
+    /* ── MOBILE NAV ── */
+    #s-mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.96);border-top:1px solid var(--border);backdrop-filter:blur(16px);z-index:100;box-shadow:0 -4px 24px rgba(15,23,42,.08)}
+    @media(max-width:600px){#s-mobile-nav{display:flex}}
+    .mnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 4px;font-size:10px;font-family:var(--font-d);font-weight:600;color:var(--muted);cursor:pointer;border:none;background:transparent;gap:3px;transition:color .15s}
+    .mnav-item.active{color:var(--blue)}
+    .mnav-icon{font-size:19px}
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ── HEADER ── -->
+  <header id="s-header">
+    <div class="h-logo">
+      <div class="h-icon">📈</div>
+      <div>
+        <h1>매크로 리스크 <span>어드바이저</span></h1>
+        <p>국제정세 · 경제뉴스 · 수급동향 · 자산배분 통합 관리</p>
+      </div>
+    </div>
+    <div class="h-right">
+      <div class="h-live"><div class="live-dot"></div>AI POWERED</div>
+      <div class="h-date" id="hDate"></div>
+      <button class="btn btn-primary btn-sm" onclick="refreshAll()" id="refreshBtn">🔄 업데이트</button>
+    </div>
+  </header>
+
+  <!-- ── SUMMARY BAR ── -->
+  <div id="s-summary">
+    <div class="si si-red">
+      <div class="si-label">코스피</div>
+      <div class="si-val" id="sum-kospi" style="color:var(--red)">5,093</div>
+      <div class="si-sub" id="sum-kospi-sub">▼ -12.0% 전일대비</div>
+    </div>
+    <div class="si si-blue">
+      <div class="si-label">글로벌 리스크</div>
+      <div class="si-val" id="sum-risk" style="color:var(--red)">78 / 100</div>
+      <div class="si-sub">높음 · 이란 전쟁</div>
+    </div>
+    <div class="si si-amber">
+      <div class="si-label">원/달러 환율</div>
+      <div class="si-val" id="sum-fx" style="color:var(--amber)">1,503</div>
+      <div class="si-sub">▲ +18원 전일대비</div>
+    </div>
+    <div class="si si-green">
+      <div class="si-label">국제 금값 (oz)</div>
+      <div class="si-val" id="sum-gold" style="color:var(--green)">$3,102</div>
+      <div class="si-sub">▲ 사상 최고치</div>
+    </div>
+  </div>
+
+  <!-- ── RISK GAUGE ── -->
+  <div class="gap">
+    <div class="slabel">🌐 글로벌 리스크 레벨</div>
+    <div id="s-gauge" class="card">
+      <div class="card-head">
+        <h2>글로벌 리스크 종합 지수</h2>
+        <span class="badge b-red" id="riskBadge">⚠️ 높음</span>
+      </div>
+      <div class="gauge-outer">
+        <div style="flex:1">
+          <div class="gauge-labels"><span>안전 0</span><span>25</span><span>50</span><span>75</span><span>100 위험</span></div>
+          <div class="gauge-track"><div class="gauge-needle" id="gNeedle" style="left:78%"></div></div>
+          <div id="riskTags" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px">
+            <span class="badge b-red">⚔️ 이란 전쟁</span>
+            <span class="badge b-red">🛢️ 호르무즈 봉쇄</span>
+            <span class="badge b-amber">📉 외국인 이탈</span>
+            <span class="badge b-amber">💱 원화 약세</span>
+            <span class="badge b-slate">🏦 금리 동결</span>
+          </div>
+        </div>
+        <div class="gauge-score-box">
+          <div class="gauge-score" id="gScore">78</div>
+          <div class="gauge-score-lbl" id="gLabel">높 음</div>
+        </div>
+      </div>
+      <!-- 리스크 히스토리 차트 -->
+      <div style="padding:0 22px 22px">
+        <div style="font-size:12px;color:var(--sub);font-family:var(--font-d);font-weight:600;margin-bottom:10px">📈 30일 리스크 히스토리</div>
+        <canvas id="riskHistoryChart" height="80"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SUPPLY ── -->
+  <div class="gap">
+    <div class="slabel">📊 KOSPI 수급동향</div>
+    <div id="s-supply" class="card">
+      <div class="card-head">
+        <h2>KOSPI 수급동향 &nbsp;<span id="head-kospi" style="font-family:var(--font-m);font-size:17px;font-weight:800;color:var(--red)">5,093.26</span><span style="font-size:11px;color:var(--muted);font-weight:400;margin-left:3px">pt</span></h2>
+        <button class="btn btn-outline btn-sm" onclick="toggleSupplyForm()">+ 수급 입력</button>
+      </div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:stretch">
+          <div class="sup-list">
+            <div class="sup-row">
+              <div class="sup-dot" style="background:var(--blue)"></div>
+              <span class="sup-name">외국인</span>
+              <span class="sup-val val-up" id="sup-foreign">-51,731억</span>
+            </div>
+            <div class="sup-row">
+              <div class="sup-dot" style="background:var(--green)"></div>
+              <span class="sup-name">기관</span>
+              <span class="sup-val val-dn" id="sup-inst">+12,400억</span>
+            </div>
+            <div class="sup-row">
+              <div class="sup-dot" style="background:var(--amber)"></div>
+              <span class="sup-name">개인</span>
+              <span class="sup-val val-dn" id="sup-retail">+39,200억</span>
+            </div>
+          </div>
+          <div style="position:relative;height:80px;min-width:0"><canvas id="supplyChart"></canvas></div>
+        </div>
+
+        <!-- 수급 입력 폼 -->
+        <div id="supplyForm" class="supply-form" style="display:none">
+          <h3>📝 오늘 수급 데이터 입력</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>코스피 지수</label>
+              <input type="number" id="inp-kospi" placeholder="5093">
+            </div>
+            <div class="form-group">
+              <label>외국인 (억원)</label>
+              <input type="number" id="inp-foreign" placeholder="-51731">
+            </div>
+            <div class="form-group">
+              <label>기관 (억원)</label>
+              <input type="number" id="inp-inst" placeholder="12400">
+            </div>
+            <div class="form-group">
+              <label>개인 (억원)</label>
+              <input type="number" id="inp-retail" placeholder="39200">
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="saveSupply()">💾 저장 및 AI 분석</button>
+        </div>
+
+        <div class="ai-comment" id="supplyComment">
+          🤖 수급 데이터를 입력하면 AI가 시장 방향성을 분석해드려요.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── NEWS ── -->
+  <div class="gap">
+    <div class="slabel">📰 주요 경제·정세 뉴스</div>
+    <div id="s-news" class="card">
+      <div class="card-head">
+        <h2>오늘의 뉴스 요약</h2>
+        <span style="font-size:11px;color:var(--muted);font-family:var(--font-m)" id="newsTime">마지막 업데이트: --:--</span>
+      </div>
+      <div class="card-body" id="newsBody">
+        <div class="news-loading"><div class="spinner"></div>뉴스를 불러오는 중...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ALLOCATION ── -->
+  <div class="gap">
+    <div class="slabel">💼 자산배분 권고</div>
+    <div id="s-alloc">
+      <div class="g5" id="allocCards">
+        <!-- JS로 렌더링 -->
+      </div>
+      <div style="margin-top:14px">
+        <div style="font-size:12px;color:var(--sub);font-family:var(--font-d);font-weight:600;margin-bottom:8px">📌 시나리오 선택</div>
+        <div class="scenario-btns">
+          <button class="scen-btn active" onclick="setScenario('war',this)">⚔️ 전쟁 장기화</button>
+          <button class="scen-btn" onclick="setScenario('resolve',this)">🕊️ 단기 종결</button>
+          <button class="scen-btn" onclick="setScenario('recession',this)">📉 글로벌 침체</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SECTOR ── -->
+  <div class="gap">
+    <div class="slabel">⚡ 섹터별 분석</div>
+    <div id="s-sector" class="card">
+      <div class="card-body">
+        <div class="sector-tabs">
+          <button class="stab active" onclick="switchSector(0,this)">🇰🇷 국내주식</button>
+          <button class="stab" onclick="switchSector(1,this)">🇺🇸 미국주식</button>
+        </div>
+        <div id="sectorKorea"></div>
+        <div id="sectorUS" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── AI ADVISOR ── -->
+  <div class="gap">
+    <div class="slabel">🤖 AI 리스크 어드바이저</div>
+    <div id="s-advisor">
+      <div class="adv-head">
+        <div>
+          <h2>투자 리스크 상담</h2>
+          <p>포트폴리오를 입력하면 현재 매크로 상황에 맞는 맞춤 분석을 드려요</p>
+        </div>
+        <div class="adv-badge">Claude AI</div>
+      </div>
+
+      <!-- API Key 입력 -->
+      <div class="api-setup" id="apiSetup">
+        <p>🔑 Claude API 키를 입력하면 AI 기능이 활성화됩니다. 키는 브라우저에만 저장되며 외부로 전송되지 않아요.</p>
+        <div class="api-row">
+          <input type="password" id="apiKey" placeholder="sk-ant-..." />
+          <button class="btn btn-outline btn-sm" onclick="saveApiKey()">저장</button>
+          <button class="btn btn-primary btn-sm" onclick="clearApiKey()">초기화</button>
+        </div>
+      </div>
+
+      <div class="ptf-area">
+        <label>📋 현재 보유 포트폴리오 (입력 시 더 정확한 조언)</label>
+        <textarea id="portfolio" placeholder="예: 삼성전자 10주 (매입가 56,000원), 한화솔루션 20주 (22,000원), 삼성화재 3주 (290,000원), SK텔레콤 7주 (54,000원), 네이버 4주 (185,000원)&#10;ISA 계좌에 삼성화재우선주 5주, 현대차우선주 8주 보유"></textarea>
+      </div>
+
+      <div class="chat-win" id="chatWin">
+        <!-- 환영 메시지 -->
+        <div class="msg msg-ai">
+          <div class="msg-lbl">🤖 AI 어드바이저</div>
+          <div class="msg-bubble">
+            안녕하세요! 현재 <strong>이란 전쟁으로 글로벌 리스크 78/100</strong>을 기록 중이에요.<br><br>
+            포트폴리오를 위에 입력하시거나 빠른 질문 버튼을 눌러보세요. API 키 없이도 기본 분석을 드릴 수 있어요.
+          </div>
+        </div>
+      </div>
+
+      <div class="quick-wrap">
+        <button class="quick-btn" onclick="quickAsk('한화솔루션을 지금 팔아야 할까요? 현재 매입가보다 많이 하락한 상태입니다.')">한화솔루션 매도 고민</button>
+        <button class="quick-btn" onclick="quickAsk('전쟁 장기화 시 제 포트폴리오의 주요 리스크를 분석해주세요.')">포트폴리오 리스크 분석</button>
+        <button class="quick-btn" onclick="quickAsk('지금 방산주나 금 ETF를 새로 편입하는 것이 좋을까요?')">방산주·금ETF 편입</button>
+        <button class="quick-btn" onclick="quickAsk('ISA 계좌에서 지금 해야 할 행동이 있나요? 해지하지 않는 것이 맞나요?')">ISA 계좌 전략</button>
+        <button class="quick-btn" onclick="quickAsk('현재 경제 상황을 3줄로 간단히 요약해주세요.')">경제상황 3줄 요약</button>
+      </div>
+
+      <div class="chat-bar">
+        <input type="text" id="chatInput" placeholder="질문을 입력하세요... (예: 지금 추가 매수해도 될까요?)" onkeydown="if(event.key==='Enter'&&!event.isComposing)sendChat()"/>
+        <button class="btn btn-primary" id="sendBtn" onclick="sendChat()">전송 ↑</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /.wrap -->
+
+<!-- 섹터 상세 팝업 -->
+<div class="sec-popup-overlay" id="sectorPopup" onclick="closeSectorPopup(event)">
+  <div class="sec-popup" onclick="event.stopPropagation()">
+    <h3 id="popupTitle">섹터명</h3>
+    <p id="popupRisk"></p>
+    <p id="popupReason"></p>
+    <p id="popupStrategy"></p>
+    <button class="btn btn-primary close-btn" onclick="document.getElementById('sectorPopup').classList.remove('open')">닫기</button>
+  </div>
+</div>
+
+<!-- 모바일 하단 네비게이션 -->
+<nav id="s-mobile-nav">
+  <button class="mnav-item active" onclick="navTo('s-gauge',this)"><span class="mnav-icon">🌐</span>리스크</button>
+  <button class="mnav-item" onclick="navTo('s-supply',this)"><span class="mnav-icon">📊</span>수급</button>
+  <button class="mnav-item" onclick="navTo('s-news',this)"><span class="mnav-icon">📰</span>뉴스</button>
+  <button class="mnav-item" onclick="navTo('s-alloc',this)"><span class="mnav-icon">💼</span>배분</button>
+  <button class="mnav-item" onclick="navTo('s-advisor',this)"><span class="mnav-icon">🤖</span>AI</button>
+</nav>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// SECTION: js-data  상수 및 데이터
+// ═══════════════════════════════════════════════════════════
+const SCENARIOS = {
+  war:      { label:'전쟁 장기화', data:[{e:'🇰🇷',n:'국내주식',p:35,d:'▼ 축소',dc:'var(--red-l)',tc:'var(--red)',bc:'var(--red)'},    {e:'🇺🇸',n:'미국주식',p:20,d:'→ 유지',dc:'#f1f5f9',tc:'var(--sub)',bc:'var(--blue)'},{e:'🥇',n:'금',p:15,d:'▲ 확대',dc:'var(--green-l)',tc:'var(--green)',bc:'var(--amber)'},{e:'🛢️',n:'원유',p:5,d:'⚠️ 주의',dc:'var(--amber-l)',tc:'var(--amber)',bc:'var(--amber)'},{e:'💵',n:'현금·채권',p:25,d:'▲ 확대',dc:'var(--green-l)',tc:'var(--green)',bc:'var(--teal)'}] },
+  resolve:  { label:'단기 종결',   data:[{e:'🇰🇷',n:'국내주식',p:45,d:'▲ 확대',dc:'var(--green-l)',tc:'var(--green)',bc:'var(--blue)'}, {e:'🇺🇸',n:'미국주식',p:25,d:'▲ 확대',dc:'var(--green-l)',tc:'var(--green)',bc:'var(--blue)'},{e:'🥇',n:'금',p:10,d:'▼ 축소',dc:'var(--red-l)',tc:'var(--red)',bc:'var(--amber)'},{e:'🛢️',n:'원유',p:5,d:'→ 유지',dc:'#f1f5f9',tc:'var(--sub)',bc:'var(--amber)'},{e:'💵',n:'현금·채권',p:15,d:'▼ 축소',dc:'var(--red-l)',tc:'var(--red)',bc:'var(--teal)'}] },
+  recession:{ label:'글로벌 침체', data:[{e:'🇰🇷',n:'국내주식',p:20,d:'▼ 대폭축소',dc:'var(--red-l)',tc:'var(--red)',bc:'var(--red)'},  {e:'🇺🇸',n:'미국주식',p:15,d:'▼ 축소',dc:'var(--red-l)',tc:'var(--red)',bc:'var(--blue)'},{e:'🥇',n:'금',p:20,d:'▲ 확대',dc:'var(--green-l)',tc:'var(--green)',bc:'var(--amber)'},{e:'🛢️',n:'원유',p:5,d:'▼ 축소',dc:'var(--red-l)',tc:'var(--red)',bc:'var(--amber)'},{e:'💵',n:'현금·채권',p:40,d:'▲ 대폭확대',dc:'var(--green-l)',tc:'var(--green)',bc:'var(--teal)'}] },
+};
+
+const SECTORS_KR = [
+  {name:'방산',score:15,dir:'▲ 성장',color:'var(--blue)',badge:'b-blue',reason:'K-방산 수출 호조, 전쟁 수혜 섹터. 한화에어로스페이스·LIG넥스원 강세.',strategy:'신규 편입 적극 검토. 포트폴리오의 10~15% 배분 고려.',risk:'낮음'},
+  {name:'통신',score:28,dir:'▲ 성장',color:'var(--green)',badge:'b-green',reason:'내수 방어주로 전쟁 영향 제한적. 배당 수익 안정.',strategy:'SK텔레콤 현 보유 유지. 배당주로 장기 보유 적합.',risk:'낮음'},
+  {name:'금융·보험',score:55,dir:'→ 중립',color:'var(--amber)',badge:'b-amber',reason:'금리 동결로 이자 마진 유지. 외국인 매도에 동반 하락.',strategy:'삼성화재 현 보유 유지. 단기 추가 매수는 시장 안정 후 검토.',risk:'중간'},
+  {name:'반도체·IT',score:65,dir:'→ 중립',color:'var(--amber)',badge:'b-amber',reason:'외국인 집중 매도. 글로벌 공급망 우려. 단기 약세.',strategy:'삼성전자·네이버 현 보유 유지. 추가 매수는 외국인 매도 진정 후.',risk:'중간'},
+  {name:'자동차',score:72,dir:'▽ 주의',color:'var(--red)',badge:'b-red',reason:'유가 급등으로 소비자 수요 둔화 우려. 원자재 비용 증가.',strategy:'현대차우선주 보유 유지 (배당주 성격). 추가 매수 자제.',risk:'중상'},
+  {name:'에너지·화학',score:88,dir:'▼ 위험',color:'var(--red)',badge:'b-red',reason:'원유 가격 급등 → 원가 상승, 마진 악화. 이란 전쟁 직격탄.',strategy:'한화솔루션 손절 또는 비중 축소 강력 검토. 전문가 상담 권장.',risk:'높음'},
+];
+
+const SECTORS_US = [
+  {name:'방산·항공우주',score:10,dir:'▲ 성장',color:'var(--blue)',badge:'b-blue',reason:'전쟁 장기화로 국방 예산 급증. Lockheed·RTX·Northrop 수혜.',strategy:'LMT·RTX ETF 신규 편입 적극 검토.',risk:'낮음'},
+  {name:'에너지(석유)',score:18,dir:'▲ 성장',color:'var(--green)',badge:'b-green',reason:'유가 급등으로 Exxon·Chevron 등 실적 개선 기대.',strategy:'에너지 ETF(XLE) 일부 편입 고려.',risk:'낮음'},
+  {name:'금·귀금속',score:12,dir:'▲ 성장',color:'var(--green)',badge:'b-green',reason:'안전자산 선호 급증. 금값 $3,100 돌파. GLD ETF 강세.',strategy:'GLD·IAU ETF 비중 확대. 전체의 10~15% 적합.',risk:'낮음'},
+  {name:'헬스케어',score:35,dir:'→ 중립',color:'var(--amber)',badge:'b-amber',reason:'경기 방어주로 금리·전쟁 영향 제한적. 안정적 수익.',strategy:'현 보유 유지. 방어 목적 일부 편입 가능.',risk:'중간'},
+  {name:'빅테크',score:45,dir:'→ 중립',color:'var(--amber)',badge:'b-amber',reason:'단기 변동성 있으나 장기 성장 스토리 유효.',strategy:'장기 보유 유지. 단기 추가 매수 자제.',risk:'중간'},
+  {name:'소비재',score:80,dir:'▼ 위험',color:'var(--red)',badge:'b-red',reason:'인플레이션 재점화 → 실질 소비 위축.',strategy:'비중 축소 고려. 방어주로 교체 검토.',risk:'높음'},
+  {name:'항공·여행',score:85,dir:'▼ 위험',color:'var(--red)',badge:'b-red',reason:'유가 급등으로 운영비 폭등. 중동 노선 운항 차질.',strategy:'항공주 보유 시 즉시 비중 축소 검토.',risk:'높음'},
+];
+
+const NEWS_SAMPLES = [
+  {tag:'지정학',tc:'b-red',date:'03/05',title:'코스피 12% 폭락·서킷브레이커 발동 — 이란 전쟁 충격파',impact:'b-red',impactTxt:'국내주식 ↓ 부정적'},
+  {tag:'원자재',tc:'b-amber',date:'03/05',title:'국제 금값 $3,100 돌파 — 안전자산 수요 급증',impact:'b-green',impactTxt:'금 ETF ↑ 긍정적'},
+  {tag:'증시',tc:'b-blue',date:'03/05',title:'외국인 5.1조 역대급 순매도 — 환율 1,500원 돌파',impact:'b-red',impactTxt:'국내주식 ↓ 부정적'},
+  {tag:'방산',tc:'b-teal',date:'03/05',title:'K-방산 수출 호조 — 한화에어로·LIG넥스원 역행 강세',impact:'b-green',impactTxt:'방산주 ↑ 긍정적'},
+  {tag:'금리',tc:'b-blue',date:'03/04',title:'한국은행, 물가 불안으로 금리 인하 시기 지연 전망',impact:'b-slate',impactTxt:'금융주 → 중립'},
+];
+
+// ═══════════════════════════════════════════════════════════
+// SECTION: js-init  초기화
+// ═══════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('hDate').textContent =
+    new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
+  initRiskHistory();
+  initSupplyChart();
+  renderNews(NEWS_SAMPLES);
+  renderAlloc('war');
+  renderSectors();
+  loadApiKey();
+});
+
+// ═══════════════════════════════════════════════════════════
+// SECTION: js-risk-history  리스크 히스토리 차트
+// ═══════════════════════════════════════════════════════════
+function initRiskHistory() {
+  const history = JSON.parse(localStorage.getItem('riskHistory')||'[]');
+  if (history.length === 0) {
+    const base = [42,44,41,46,43,45,48,50,47,52,54,51,56,53,58,55,60,57,62,59,64,61,66,68,65,70,73,75,78,78];
+    const today = new Date();
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(today); d.setDate(d.getDate()-i);
+      history.push({date:d.toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}), score:base[29-i]});
+    }
+    localStorage.setItem('riskHistory', JSON.stringify(history));
+  }
+  const labels = history.map(h=>h.date);
+  const scores = history.map(h=>h.score);
+  const colors = scores.map(s => s>=70?'rgba(220,38,38,.8)':s>=45?'rgba(217,119,6,.8)':'rgba(5,150,105,.8)');
+  new Chart(document.getElementById('riskHistoryChart'),{
+    type:'line',
+    data:{labels,datasets:[{data:scores,borderColor:'var(--blue)',backgroundColor:'rgba(37,99,235,.07)',tension:.4,fill:true,pointBackgroundColor:colors,pointRadius:3,pointHoverRadius:5}]},
+    options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`리스크: ${ctx.raw}/100`}}},scales:{y:{min:0,max:100,ticks:{font:{size:10}},grid:{color:'rgba(0,0,0,.04)'}},x:{ticks:{font:{size:10},maxTicksLimit:8},grid:{display:false}}}}
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// SECTION: js-supply-chart  수급 차트
+// ═══════════════════════════════════════════════════════════
+let supplyChartObj = null;
+function initSupplyChart() {
+  const saved = JSON.parse(localStorage.getItem('supplyData')||'null');
+  const d = saved || {kospi:'5,093',foreign:'-51,731억',inst:'+12,400억',retail:'+39,200억'};
+  const hk = document.getElementById('head-kospi');
+  if(hk) hk.textContent = d.kospi;
+  document.getElementById('sup-foreign').textContent = d.foreign;
+  document.getElementById('sup-inst').textContent = d.inst;
+  document.getElementById('sup-retail').textContent = d.retail;
+
+  const vals = saved ? [parseFloat(d.foreign)||0, parseFloat(d.inst)||0, parseFloat(d.retail)||0] : [-51731,12400,39200];
+  const colors = vals.map(v=>v>=0?'rgba(5,150,105,.7)':'rgba(220,38,38,.7)');
+  supplyChartObj = new Chart(document.getElementById('supplyChart'),{
+    type:'bar',
+    data:{labels:['외국인','기관','개인'],datasets:[{data:vals,backgroundColor:colors,borderRadius:5,borderSkipped:false}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.raw.toLocaleString()}억원`}}},scales:{x:{ticks:{font:{size:10},callback:v=>`${v>=0?'+':''}${v.toLocaleString()}`},grid:{color:'rgba(0,0,0,.04)'}},y:{display:false,grid:{display:false}}},layout:{padding:{top:4,bottom:4}}}
+  });
+}
+
+function toggleSupplyForm() {
+  const f = document.getElementById('supplyForm');
+  f.style.display = f.style.display==='none'?'block':'none';
+}
+
+async function saveSupply() {
+  const kospi = document.getElementById('inp-kospi').value || '5093';
+  const foreign = parseFloat(document.getElementById('inp-foreign').value||'-51731');
+  const inst    = parseFloat(document.getElementById('inp-inst').value||'12400');
+  const retail  = parseFloat(document.getElementById('inp-retail').value||'39200');
+
+  const fmt = v => (v>=0?'+':'')+v.toLocaleString()+'억';
+  const kospiNum = parseFloat(kospi); const data = {kospi:isNaN(kospiNum)?kospi:kospiNum.toLocaleString('ko-KR'), foreign:fmt(foreign), inst:fmt(inst), retail:fmt(retail)};
+  localStorage.setItem('supplyData', JSON.stringify(data));
+
+  const hk2 = document.getElementById('head-kospi');
+    if(hk2) hk2.textContent = data.kospi;
+  document.getElementById('sup-foreign').textContent = data.foreign;
+  document.getElementById('sup-inst').textContent = data.inst;
+  document.getElementById('sup-retail').textContent = data.retail;
+
+  if(supplyChartObj){
+    supplyChartObj.data.datasets[0].data = [foreign,inst,retail];
+    supplyChartObj.data.datasets[0].backgroundColor = [foreign,inst,retail].map(v=>v>=0?'rgba(5,150,105,.7)':'rgba(220,38,38,.7)');
+    supplyChartObj.update();
+  }
+  document.getElementById('supplyForm').style.display='none';
+
+  const comment = document.getElementById('supplyComment');
+  comment.innerHTML = '<span style="color:var(--sub)">🤖 분석 중...</span>';
+  const key = getApiKey();
+  if(key){
+    try {
+      const res = await callClaude(`외국인 ${fmt(foreign)}, 기관 ${fmt(inst)}, 개인 ${fmt(retail)} 수급 데이터를 보고 한국 주식시장 방향성을 2~3문장으로 간결하게 해석해줘.`, '당신은 한국 주식시장 수급 분석 전문가입니다. 간결하고 실용적으로 답변하세요.', key);
+      comment.innerHTML = '🤖 ' + res;
+    } catch(e){ comment.innerHTML = '🤖 AI 분석 실패. 네트워크를 확인해주세요.'; }
+  } else {
+    const total = foreign+inst+retail;
+    const dir = foreign<-10000 ? '외국인 대규모 매도로 단기 하락 압력이 강합니다.' : foreign>0 ? '외국인이 순매수로 전환, 시장 반등 가능성이 있습니다.' : '외국인 매도가 지속되나 개인·기관이 받아내는 구조입니다.';
+    comment.innerHTML = `🤖 ${dir} 외국인·기관·개인 합산 ${fmt(total)}. API 키 입력 시 더 상세한 분석을 받으실 수 있어요.`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// SECTION: js-news  뉴스
+// ═══════════════════════════════════════════════════════════
+function renderNews(items) {
+  document.getElementById('newsBody').innerHTML = items.map(n=>`
+    <div class="news-card">
+      <div class="news-meta">
+        <span class="badge ${n.tag?n.tc:''}">${n.tag||''}</span>
+        <span class="news-date">${n.date||''}</span>
+      </div>
+      <div class="news-title">${n.title}</div>
+      <div class="news-impact"><span class="badge ${n.impact}">${n.impactTxt}</span></div>
+    </div>`).join('');
+  const now = new Date();
+  document.getElementById('newsTime').textContent = `마지막 업데이트: ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// SECTION: js-refresh-all  전체 데이터 업데이트
+// ═══════════════════════════════════════════════════════════
+async function refreshAll() {
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('loading');
+  btn.textContent = ' 업데이트 중...';
+
+  const key = getApiKey();
+
+  // API 키 없을 때 — 샘플 데이터 업데이트
+  if (!key) {
+    document.getElementById('newsBody').innerHTML = '<div class="news-loading"><div class="spinner"></div>데이터 갱신 중...</div>';
+    await new Promise(r => setTimeout(r, 1200));
+    renderNews(NEWS_SAMPLES);
+    btn.classList.remove('loading');
+    btn.innerHTML = '🔄 업데이트';
+    showToast('샘플 데이터로 업데이트됐어요. API 키 입력 시 실시간 데이터를 받을 수 있어요.');
+    return;
+  }
+
+  // ── 1단계: 뉴스 + 리스크 + 지표 통합 조회 ──────────────────
+  document.getElementById('newsBody').innerHTML = '<div class="news-loading"><div class="spinner"></div>AI가 실시간 데이터를 수집 중...</div>';
+
+  try {
+    const today = new Date().toLocaleDateString('ko-KR');
+    const masterPrompt = `오늘(${today}) 기준으로 한국 투자자에게 중요한 데이터를 웹검색으로 수집하고, 반드시 아래 JSON 형식으로만 응답해줘 (마크다운·설명 없이 JSON만):
+
+{
+  "news": [
+    {"tag":"카테고리","tc":"b-red|b-blue|b-amber|b-teal|b-green","date":"MM/DD","title":"뉴스제목","impact":"b-red|b-green|b-amber|b-slate","impactTxt":"자산명 ↑↓ 긍정/부정/중립"}
+  ],
+  "risk": {
+    "score": 숫자0~100,
+    "label": "낮음|보통|높음|매우높음",
+    "badgeClass": "b-green|b-amber|b-red",
+    "badgeText": "✅ 낮음|⚠️ 보통|⚠️ 높음|🚨 매우높음",
+    "factors": ["요인1","요인2","요인3"]
+  },
+  "market": {
+    "kospi": "숫자(예:5093.26)",
+    "kospiChange": "▲/▼ 변화율 텍스트",
+    "kospiColor": "var(--red)|var(--blue)|var(--green)",
+    "fx": "숫자(예:1503)",
+    "fxChange": "▲/▼ 변화 텍스트",
+    "gold": "$숫자(예:$3102)",
+    "goldChange": "▲/▼ 텍스트"
+  }
+}
+
+news는 5개, 뉴스·리스크·시장 데이터 모두 오늘 기준 최신 실제 데이터로 채워줘.`;
+
+    const raw = await callClaude(masterPrompt,
+      '당신은 한국 주식투자 전문 데이터 분석가입니다. 반드시 유효한 JSON만 응답하세요. 마크다운 코드블록 없이 순수 JSON만.',
+      key, true);
+
+    const cleaned = raw.replace(/```json|```/g,'').trim();
+    const data = JSON.parse(cleaned);
+
+    // ── 뉴스 업데이트 ──
+    if (data.news) renderNews(data.news);
+
+    // ── 리스크 게이지 업데이트 ──
+    if (data.risk) {
+      const r = data.risk;
+      const score = Math.min(100, Math.max(0, parseInt(r.score)||78));
+      document.getElementById('gScore').textContent = score;
+      document.getElementById('gLabel').textContent = r.label || '보통';
+      document.getElementById('gNeedle').style.left = score + '%';
+      document.getElementById('riskBadge').className = `badge ${r.badgeClass||'b-amber'}`;
+      document.getElementById('riskBadge').textContent = r.badgeText || '⚠️ 보통';
+      document.getElementById('sum-risk').textContent = score + ' / 100';
+      document.getElementById('sum-risk').style.color =
+        score >= 70 ? 'var(--red)' : score >= 45 ? 'var(--amber)' : 'var(--green)';
+
+      // 리스크 요인 태그 업데이트
+      if (r.factors && r.factors.length) {
+        const tagColors = ['b-red','b-red','b-amber','b-amber','b-slate'];
+        document.getElementById('riskTags').innerHTML =
+          r.factors.map((f,i) =>
+            `<span class="badge ${tagColors[i]||'b-slate'}">${f}</span>`
+          ).join('');
+      }
+
+      // 히스토리에 오늘 점수 추가
+      const history = JSON.parse(localStorage.getItem('riskHistory')||'[]');
+      const todayStr = new Date().toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'});
+      if (history.length && history[history.length-1].date === todayStr) {
+        history[history.length-1].score = score;
+      } else {
+        history.push({date: todayStr, score});
+        if (history.length > 30) history.shift();
+      }
+      localStorage.setItem('riskHistory', JSON.stringify(history));
+
+      // 자산배분 시나리오 자동 조정
+      const activeScen = document.querySelector('.scen-btn.active');
+      if (activeScen) {
+        const scenKey = score >= 70 ? 'war' : score >= 40 ? 'resolve' : 'resolve';
+        renderAlloc(scenKey);
+      }
+    }
+
+    // ── 요약 바 지표 업데이트 ──
+    if (data.market) {
+      const m = data.market;
+      if (m.kospi) {
+        document.getElementById('sum-kospi').textContent = m.kospi;
+        document.getElementById('sum-kospi').style.color = m.kospiColor || 'var(--red)';
+        document.getElementById('sum-kospi-sub').textContent = m.kospiChange || '';
+        // 헤더 KOSPI 지수도 업데이트
+        const hk = document.getElementById('head-kospi');
+        if (hk) { hk.textContent = m.kospi; hk.style.color = m.kospiColor || 'var(--red)'; }
+      }
+      if (m.fx) {
+        document.getElementById('sum-fx').textContent = m.fx;
+        document.getElementById('sum-fx').nextElementSibling.textContent = m.fxChange || '';
+      }
+      if (m.gold) {
+        document.getElementById('sum-gold').textContent = m.gold;
+        document.getElementById('sum-gold').nextElementSibling.textContent = m.goldChange || '';
+      }
+    }
+
+    showToast('✅ 모든 데이터가 실시간으로 업데이트됐어요!');
+
+  } catch(e) {
+    // 파싱 실패 시 뉴스만 샘플로 복구
+    renderNews(NEWS_SAMPLES);
+    showToast('일부 데이터 업데이트 실패. 네트워크를 확인해주세요.');
+  }
+
+  btn.classList.remove('loading');
+  btn.innerHTML = '🔄 업데이트';
+}
+
+// 토스트 알림
+function showToast(msg) {
+  const existing = document.getElementById('toast');
+  if (existing) existing.remove();
+  const t = document.createElement('div');
+  t.id = 'toast';
+  t.style.cssText = `position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-family:var(--font-d);z-index:300;box-shadow:var(--sh-lg);animation:fadeUp .3s ease;white-space:nowrap`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.style.opacity='0', 2500);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// ═══════════════════════════════════════════════════════════
+// SECTION: js-allocation  자산배분
+// ═══════════════════════════════════════════════════════════
+function renderAlloc(scenario) {
+  const items = SCENARIOS[scenario].data;
+  document.getElementById('allocCards').innerHTML = items.map(it=>`
+    <div class="alloc-card">
+      <div class="alloc-bar" style="background:${it.bc}"></div>
+      <div class="alloc-emoji">${it.e}</div>
+      <div class="alloc-name">${it.n}</div>
+      <div class="alloc-pct">${it.p}%</div>
+      <div class="alloc-dir" style="background:${it.dc};color:${it.tc}">${it.d}</div>
+    </div>`).join('');
+}
+
+function setScenario(key, el) {
+  document.querySelectorAll('.scen-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  renderAlloc(key);
+}
+
+// ═══════════════════════════════════════════════════════════
+// SECTION: js-sector  섹터 분석
+// ═══════════════════════════════════════════════════════════
+function renderSectors() {
+  document.getElementById('sectorKorea').innerHTML = SECTORS_KR.map((s,i)=>`
+    <div class="sec-row" onclick="openSectorPopup(${i},'kr')">
+      <div class="sec-name">${s.name}</div>
+      <div class="sec-bw"><div class="sec-b" style="width:${s.score}%;background:${s.color}"></div></div>
+      <div class="sec-pct" style="color:${s.color}">${s.score}</div>
+      <div class="sec-dir"><span class="badge ${s.badge}">${s.dir}</span></div>
+    </div>`).join('');
+  document.getElementById('sectorUS').innerHTML = SECTORS_US.map((s,i)=>`
+    <div class="sec-row" onclick="openSectorPopup(${i},'us')">
+      <div class="sec-name">${s.name}</div>
+      <div class="sec-bw"><div class="sec-b" style="width:${s.score}%;background:${s.color}"></div></div>
+      <div class="sec-pct" style="color:${s.color}">${s.score}</div>
+      <div class="sec-dir"><span class="badge ${s.badge}">${s.dir}</span></div>
+    </div>`).join('');
+}
+
+function switchSector(i, el) {
+  document.querySelectorAll('.stab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('sectorKorea').style.display = i===0?'block':'none';
+  document.getElementById('sectorUS').style.display    = i===1?'block':'none';
+}
+
+function openSectorPopup(i, market) {
+  const s = market==='kr' ? SECTORS_KR[i] : SECTORS_US[i];
+  document.getElementById('popupTitle').textContent = `${s.name} 섹터 상세`;
+  document.getElementById('popupRisk').innerHTML  = `<span class="badge ${s.badge}">위험도: ${s.risk}</span>`;
+  document.getElementById('popupReason').textContent = '📌 ' + s.reason;
+  document.getElementById('popupStrategy').innerHTML = `<strong>💡 전략:</strong> ${s.strategy}`;
+  document.getElementById('sectorPopup').classList.add('open');
+}
+function closeSectorPopup(e) { if(e.target===e.currentTarget) document.getElementById('sectorPopup').classList.remove('open'); }
+
+// ═══════════════════════════════════════════════════════════
+// SECTION: js-chat  AI 어드바이저 채팅
+// ═══════════════════════════════════════════════════════════
+function quickAsk(q) {
+  document.getElementById('chatInput').value = q;
+  sendChat();
+}
+
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const text  = input.value.trim();
+  if(!text) return;
+  const portfolio = document.getElementById('portfolio').value.trim();
+  appendMsg('user', text);
+  input.value = '';
+  document.getElementById('sendBtn').disabled = true;
+
+  const typingEl = appendTyping();
+  const key = getApiKey();
+
+  const system = `당신은 한국 주식 투자자를 위한 매크로 리스크 어드바이저입니다.
+현재 상황:
+- 이란-이스라엘 전쟁 발발, 호르무즈 해협 봉쇄 위협
+- 코스피 12% 급락, 서킷브레이커 발동, 외국인 5.1조 순매도
+- 금값 사상 최고치($3,100), 방산주 강세, 원/달러 1,500원 돌파
+- 글로벌 리스크 레벨: 높음 (78/100)
+${portfolio?`\n사용자 포트폴리오:\n${portfolio}`:''}
+
+답변 원칙:
+- 한국어로 친근하고 명확하게
+- 구체적 근거와 실용적 조언 제공
+- 확정적 매매 지시 금지, "고려해볼 수 있다" 형태로
+- 300자 내외로 간결하게
+- 금융 전문가가 아님을 필요 시 언급`;
+
+  try {
+    const reply = key
+      ? await callClaude(text, system, key)
+      : getOfflineReply(text, portfolio);
+    typingEl.remove();
+    appendMsg('ai', reply);
+  } catch(e) {
+    typingEl.remove();
+    appendMsg('ai', '죄송해요, 응답을 받지 못했어요. API 키를 확인하거나 잠시 후 다시 시도해주세요.');
+  }
+  document.getElementById('sendBtn').disabled = false;
+  document.getElementById('chatInput').focus();
+}
+
+function getOfflineReply(text, portfolio) {
+  const t = text.toLowerCase();
+  if(t.includes('한화') || t.includes('솔루션'))
+    return '한화솔루션은 에너지·화학 섹터로 현재 고위험 구간이에요. 원유 가격 급등 시 원가 부담이 커져 마진이 줄어들어요. 손실이 크다면 손절 후 방산주·금 ETF로 교체하는 것도 고려해볼 수 있어요. (API 키 입력 시 더 상세한 분석 가능)';
+  if(t.includes('방산') || t.includes('금etf') || t.includes('금 etf'))
+    return '전쟁 장기화 시 방산주(한화에어로스페이스, LIG넥스원)와 금 ETF(KODEX 골드선물)는 유망해요. 전체 포트폴리오의 10~15% 수준으로 편입을 고려해보세요. (API 키 입력 시 더 상세한 분석 가능)';
+  if(t.includes('isa') || t.includes('계좌'))
+    return 'ISA 계좌는 세금 혜택이 있어 단기 하락으로 해지하면 혜택을 잃게 돼요. 삼성화재우선주·현대차우선주는 배당주로 장기 보유에 적합하니 현재 상황에서 ISA 유지를 추천드려요. (API 키 입력 시 더 상세한 분석 가능)';
+  if(t.includes('요약') || t.includes('3줄'))
+    return '① 이란 전쟁으로 코스피 12% 급락, 서킷브레이커 발동. ② 금·방산주만 역행 강세, 에너지화학·반도체 직격탄. ③ 외국인 대규모 이탈 지속, 단기 추가 하락 가능성 주시 필요. (API 키 입력 시 실시간 뉴스 기반 분석 가능)';
+  return `"${text}"에 대해 답변드릴게요. 현재 이란 전쟁으로 고위험 구간이라 방어적 포지션이 중요해요. Claude API 키를 입력하시면 더 정확하고 개인화된 분석을 받으실 수 있어요.`;
+}
+
+function appendMsg(role, text) {
+  const div = document.createElement('div');
+  div.className = `msg msg-${role}`;
+  div.innerHTML = `
+    <div class="msg-lbl">${role==='user'?'나 👤':'🤖 AI 어드바이저'}</div>
+    <div class="msg-bubble">${text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')}</div>`;
+  document.getElementById('chatWin').appendChild(div);
+  document.getElementById('chatWin').scrollTop = 9999;
+  return div;
+}
+
+function appendTyping() {
+  const div = document.createElement('div');
+  div.className = 'msg msg-ai';
+  div.innerHTML = `<div class="msg-lbl">🤖 AI 어드바이저</div><div class="typing-dots"><span></span><span></span><span></span></div>`;
+  document.getElementById('chatWin').appendChild(div);
+  document.getElementById('chatWin').scrollTop = 9999;
+  return div;
+}
+
+// ═══════════════════════════════════════════════════════════
+// SECTION: js-api  Claude API 호출
+// ═══════════════════════════════════════════════════════════
+async function callClaude(userMsg, system, key, useSearch=false) {
+  const body = {model:'claude-sonnet-4-20250514', max_tokens:1000, system, messages:[{role:'user',content:userMsg}]};
+  if(useSearch) body.tools = [{type:'web_search_20250305',name:'web_search'}];
+  const res = await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify(body)
+  });
+  if(!res.ok) throw new Error('API error');
+  const data = await res.json();
+  return data.content.map(c=>c.type==='text'?c.text:'').filter(Boolean).join('');
+}
+
+function getApiKey(){ return localStorage.getItem('claudeApiKey')||''; }
+function saveApiKey(){
+  const k = document.getElementById('apiKey').value.trim();
+  if(!k){alert('API 키를 입력해주세요.');return;}
+  localStorage.setItem('claudeApiKey',k);
+  document.getElementById('apiKey').value='';
+  document.getElementById('apiSetup').style.background='linear-gradient(135deg,#f0fdf4,#f0fdf4)';
+  document.getElementById('apiSetup').style.borderColor='#bbf7d0';
+  document.querySelector('#apiSetup p').innerHTML='✅ API 키가 저장되었습니다. AI 기능이 활성화됐어요!';
+  document.querySelector('#apiSetup p').style.color='#166534';
+}
+function clearApiKey(){
+  localStorage.removeItem('claudeApiKey');
+  document.getElementById('apiKey').value='';
+  document.getElementById('apiSetup').style.background='';
+  document.getElementById('apiSetup').style.borderColor='';
+  document.querySelector('#apiSetup p').innerHTML='🔑 Claude API 키를 입력하면 AI 기능이 활성화됩니다. 키는 브라우저에만 저장되며 외부로 전송되지 않아요.';
+  document.querySelector('#apiSetup p').style.color='';
+}
+function loadApiKey(){
+  const k = getApiKey();
+  if(k){
+    document.getElementById('apiSetup').style.background='linear-gradient(135deg,#f0fdf4,#f0fdf4)';
+    document.getElementById('apiSetup').style.borderColor='#bbf7d0';
+    document.querySelector('#apiSetup p').innerHTML='✅ API 키가 저장되어 있습니다. AI 기능이 활성화됐어요!';
+    document.querySelector('#apiSetup p').style.color='#166534';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// SECTION: js-mobile-nav  모바일 네비게이션
+// ═══════════════════════════════════════════════════════════
+function navTo(id, el){
+  document.querySelectorAll('.mnav-item').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById(id).scrollIntoView({behavior:'smooth',block:'start'});
+}
+</script>
+</body>
+</html>
