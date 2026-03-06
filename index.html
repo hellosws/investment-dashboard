@@ -97,7 +97,7 @@
     @media(max-width:1000px){#s-summary{grid-template-columns:repeat(3,1fr)}} @media(max-width:600px){#s-summary{grid-template-columns:1fr 1fr}}
 
     /* ── RISK GAUGE ── */
-    #s-gauge{animation:fadeUp .5s .05s ease both} @media(max-width:700px){#s-gauge{grid-template-columns:1fr!important}}
+    #s-gauge{animation:fadeUp .5s .05s ease both}
     .gauge-outer{padding:10px;display:grid;grid-template-columns:1fr auto;gap:28px;align-items:center}
     .gauge-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-family:var(--font-m);margin-bottom:6px}
     .gauge-track{position:relative;height:14px;border-radius:7px;background:linear-gradient(90deg,#10b981,#f59e0b 50%,#ef4444);box-shadow:inset 0 2px 4px rgba(0,0,0,.1)}
@@ -269,8 +269,6 @@
   <div class="gap">
     <div class="slabel">⚠️ 리스크 지수</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px" id="s-gauge">
-
-      <!-- 글로벌 리스크 -->
       <div class="card">
         <div class="card-head">
           <h2>🌐 글로벌 리스크 지수</h2>
@@ -297,8 +295,6 @@
           <canvas id="riskHistoryChart" height="48"></canvas>
         </div>
       </div>
-
-      <!-- 국내 위험지수 -->
       <div class="card">
         <div class="card-head">
           <h2>🇰🇷 국내 위험지수</h2>
@@ -325,9 +321,7 @@
           <canvas id="domesticHistoryChart" height="48"></canvas>
         </div>
       </div>
-
     </div>
-    <!-- 자동 권고 배너 -->
     <div id="riskSummaryBar" style="margin-top:10px;padding:11px 18px;background:linear-gradient(135deg,#eff6ff,#f0f9ff);border:1px solid var(--blue-l);border-radius:var(--r-md);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <div style="font-size:13px;color:var(--ink2)">🤖 <strong>자동 자산배분 권고:</strong> <span id="allocRecommendTxt">글로벌 高 + 국내 高 → 최대 방어 (현금·금 극대화)</span></div>
       <span class="badge b-red" id="allocRecommendBadge">🔴 최대 방어</span>
@@ -421,19 +415,11 @@
   <div class="gap">
     <div class="slabel">💼 자산배분 권고</div>
     <div id="s-alloc">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-        <div style="background:var(--bg-alt);border:1px solid var(--border);border-radius:var(--r-md);padding:9px 14px;display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:12px;color:var(--sub);font-family:var(--font-d);font-weight:600">🌐 글로벌 리스크</span>
-          <span class="badge b-red" id="alloc-global-badge">78점 · 높음</span>
-        </div>
-        <div style="background:var(--bg-alt);border:1px solid var(--border);border-radius:var(--r-md);padding:9px 14px;display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:12px;color:var(--sub);font-family:var(--font-d);font-weight:600">🇰🇷 국내 위험지수</span>
-          <span class="badge b-red" id="alloc-domestic-badge">72점 · 높음</span>
-        </div>
+      <div class="g5" id="allocCards">
+        <!-- JS로 렌더링 -->
       </div>
-      <div class="g5" id="allocCards"></div>
-      <div style="margin-top:10px">
-        <div style="font-size:12px;color:var(--sub);font-family:var(--font-d);font-weight:600;margin-bottom:6px">📌 시나리오 직접 선택</div>
+      <div style="margin-top:14px">
+        <div style="font-size:12px;color:var(--sub);font-family:var(--font-d);font-weight:600;margin-bottom:8px">📌 시나리오 선택</div>
         <div class="scenario-btns">
           <button class="scen-btn active" onclick="setScenario('highhigh',this)">🔴 글로벌高·국내高</button>
           <button class="scen-btn" onclick="setScenario('highlow',this)">🟠 글로벌高·국내低</button>
@@ -537,7 +523,6 @@
 // ═══════════════════════════════════════════════════════════
 // SECTION: js-data  상수 및 데이터
 // ═══════════════════════════════════════════════════════════
-// 글로벌/국내 리스크 조합 4가지
 const SCENARIOS = {
   highhigh:{ label:'글로벌高·국내高', data:[{e:'🇰🇷',n:'국내주식',p:15,d:'▼▼ 최소화',dc:'var(--red-l)',tc:'var(--red)',bc:'var(--red)'},{e:'🇺🇸',n:'미국주식',p:10,d:'▼ 축소',dc:'var(--red-l)',tc:'var(--red)',bc:'var(--blue)'},{e:'🥇',n:'금',p:25,d:'▲▲ 확대',dc:'var(--green-l)',tc:'var(--green)',bc:'var(--amber)'},{e:'🛢️',n:'원유',p:5,d:'⚠️ 주의',dc:'var(--amber-l)',tc:'var(--amber)',bc:'var(--amber)'},{e:'💵',n:'현금·채권',p:45,d:'▲▲ 극대화',dc:'var(--green-l)',tc:'var(--green)',bc:'var(--teal)'}] },
   highlow: { label:'글로벌高·국내低', data:[{e:'🇰🇷',n:'국내주식',p:30,d:'→ 중립',dc:'#f1f5f9',tc:'var(--sub)',bc:'var(--blue)'},{e:'🇺🇸',n:'미국주식',p:15,d:'→ 중립',dc:'#f1f5f9',tc:'var(--sub)',bc:'var(--blue)'},{e:'🥇',n:'금',p:20,d:'▲ 확대',dc:'var(--green-l)',tc:'var(--green)',bc:'var(--amber)'},{e:'🛢️',n:'원유',p:5,d:'⚠️ 주의',dc:'var(--amber-l)',tc:'var(--amber)',bc:'var(--amber)'},{e:'💵',n:'현금·채권',p:30,d:'▲ 확대',dc:'var(--green-l)',tc:'var(--green)',bc:'var(--teal)'}] },
@@ -572,9 +557,7 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('hDate').textContent =
     new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
   initRiskHistory();
-  initDomesticHistory();
   initSupplyChart();
-  initSupply30Chart();
   autoRecommendAlloc();
   renderSectors();
   loadApiKey();
@@ -605,21 +588,18 @@ function initRiskHistory() {
 }
 
 // ═══════════════════════════════════════════════════════════
-// SECTION: js-domestic-history  국내 위험지수 히스토리
+// SECTION: js-domestic-history
 // ═══════════════════════════════════════════════════════════
 function initDomesticHistory() {
   const history = JSON.parse(localStorage.getItem('domesticHistory')||'[]');
   if (history.length === 0) {
     const base = [38,40,42,39,44,46,43,48,50,47,52,55,51,57,54,59,56,61,58,63,60,65,62,67,65,68,70,72,71,72];
     const today = new Date();
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date(today); d.setDate(d.getDate()-i);
-      history.push({date:d.toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}), score:base[29-i]});
-    }
+    for (let i=29;i>=0;i--){const d=new Date(today);d.setDate(d.getDate()-i);history.push({date:d.toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'}),score:base[29-i]});}
     localStorage.setItem('domesticHistory', JSON.stringify(history));
   }
-  const labels = history.map(h=>h.date), scores = history.map(h=>h.score);
-  const colors = scores.map(s=>s>=70?'rgba(220,38,38,.8)':s>=45?'rgba(217,119,6,.8)':'rgba(5,150,105,.8)');
+  const labels=history.map(h=>h.date), scores=history.map(h=>h.score);
+  const colors=scores.map(s=>s>=70?'rgba(220,38,38,.8)':s>=45?'rgba(217,119,6,.8)':'rgba(5,150,105,.8)');
   new Chart(document.getElementById('domesticHistoryChart'),{
     type:'line',
     data:{labels,datasets:[{data:scores,borderColor:'#dc2626',backgroundColor:'rgba(220,38,38,.06)',tension:.4,fill:true,pointBackgroundColor:colors,pointRadius:3,pointHoverRadius:5}]},
@@ -627,25 +607,22 @@ function initDomesticHistory() {
   });
 }
 
-// ── 두 리스크 지수 조합 → 자동 자산배분 권고
 function autoRecommendAlloc() {
-  const gScore = parseInt(document.getElementById('gScore').textContent)||78;
-  const dScore = parseInt(document.getElementById('dScore').textContent)||72;
-  const gHigh = gScore >= 55, dHigh = dScore >= 55;
-  let key, txt, badge, cls;
-  if (gHigh && dHigh)        { key='highhigh'; txt='글로벌 高 + 국내 高 → 최대 방어 (현금·금 극대화)'; badge='🔴 최대 방어'; cls='b-red'; }
-  else if (gHigh && !dHigh)  { key='highlow';  txt='글로벌 高 + 국내 低 → 글로벌 헤지 (금·방산 중심)'; badge='🟠 글로벌 헤지'; cls='b-amber'; }
-  else if (!gHigh && dHigh)  { key='lowhigh';  txt='글로벌 低 + 국내 高 → 해외 분산 (미국주식 확대)'; badge='🟡 해외 분산'; cls='b-amber'; }
-  else                        { key='lowlow';   txt='글로벌 低 + 국내 低 → 적극 공세 (주식 비중 확대)'; badge='🟢 적극 공세'; cls='b-green'; }
-  const rt=document.getElementById('allocRecommendTxt'), rb=document.getElementById('allocRecommendBadge');
-  if(rt) rt.textContent=txt;
-  if(rb) { rb.textContent=badge; rb.className=`badge ${cls}`; }
-  const gb=document.getElementById('alloc-global-badge'), db=document.getElementById('alloc-domestic-badge');
-  if(gb) { gb.textContent=`${gScore}점 · ${gHigh?'높음':'보통'}`; gb.className=`badge ${gHigh?'b-red':'b-amber'}`; }
-  if(db) { db.textContent=`${dScore}점 · ${dHigh?'높음':'보통'}`; db.className=`badge ${dHigh?'b-red':'b-amber'}`; }
+  const gScore=parseInt(document.getElementById('gScore').textContent)||78;
+  const dScore=parseInt(document.getElementById('dScore').textContent)||72;
+  const gH=gScore>=55, dH=dScore>=55;
+  let key,txt,badge,cls;
+  if(gH&&dH)      {key='highhigh';txt='글로벌 高 + 국내 高 → 최대 방어 (현금·금 극대화)';badge='🔴 최대 방어';cls='b-red';}
+  else if(gH&&!dH){key='highlow'; txt='글로벌 高 + 국내 低 → 글로벌 헤지 (금·방산 중심)';badge='🟠 글로벌 헤지';cls='b-amber';}
+  else if(!gH&&dH){key='lowhigh'; txt='글로벌 低 + 국내 高 → 해외 분산 (미국주식 확대)';badge='🟡 해외 분산';cls='b-amber';}
+  else            {key='lowlow';  txt='글로벌 低 + 국내 低 → 적극 공세 (주식 비중 확대)';badge='🟢 적극 공세';cls='b-green';}
+  const rt=document.getElementById('allocRecommendTxt'),rb=document.getElementById('allocRecommendBadge');
+  if(rt)rt.textContent=txt; if(rb){rb.textContent=badge;rb.className=`badge ${cls}`;}
+  const gb=document.getElementById('alloc-global-badge'),db=document.getElementById('alloc-domestic-badge');
+  if(gb){gb.textContent=`${gScore}점 · ${gH?'높음':'보통'}`;gb.className=`badge ${gH?'b-red':'b-amber'}`;}
+  if(db){db.textContent=`${dScore}점 · ${dH?'높음':'보통'}`;db.className=`badge ${dH?'b-red':'b-amber'}`;}
   document.querySelectorAll('.scen-btn').forEach(b=>b.classList.remove('active'));
-  const ab=document.querySelector(`.scen-btn[onclick*="${key}"]`);
-  if(ab) ab.classList.add('active');
+  const ab=document.querySelector(`.scen-btn[onclick*="${key}"]`); if(ab)ab.classList.add('active');
   renderAlloc(key);
 }
 
@@ -771,20 +748,17 @@ async function refreshAll() {
 
   const key = getApiKey();
 
-  // API 키 없을 때 — 샘플 데이터 업데이트
+  // API 키 없을 때
   if (!key) {
-    await new Promise(r => setTimeout(r, 1200));
-      btn.classList.remove('loading');
+    btn.classList.remove('loading');
     btn.innerHTML = '🔄 업데이트';
-    showToast('샘플 데이터로 업데이트됐어요. API 키 입력 시 실시간 데이터를 받을 수 있어요.');
+    showToast('API 키를 입력하면 실시간 데이터를 받을 수 있어요.');
     return;
   }
 
-  // ── 1단계: 뉴스 + 리스크 + 지표 통합 조회 ──────────────────
-
   try {
     const today = new Date().toLocaleDateString('ko-KR');
-    const masterPrompt = `오늘(${today}) 기준으로 한국 투자자에게 중요한 데이터를 웹검색으로 수집하고, 반드시 아래 JSON 형식으로만 응답해줘 (마크다운·설명 없이 JSON만):
+    const masterPrompt = `오늘(${today}) 기준으로 한국 투자자에게 중요한 데이터를 웹검색으로 수집하고, 반드시 아래 JSON 형식으로만 응답해줘 (마크다운·설명 없이 순수 JSON만):
 
 {
   "risk": {
@@ -792,32 +766,34 @@ async function refreshAll() {
     "label": "낮음|보통|높음|매우높음",
     "badgeClass": "b-green|b-amber|b-red",
     "badgeText": "✅ 낮음|⚠️ 보통|⚠️ 높음|🚨 매우높음",
-    "factors": ["요인1","요인2","요인3"]
+    "factors": ["요인1","요인2","요인3","요인4"]
   },
   "domestic": {
     "score": 숫자0~100,
-    "label": "낮음|보통|높음",
+    "label": "낮음|보통|높음|매우높음",
     "badgeClass": "b-green|b-amber|b-red",
-    "badgeText": "✅ 낮음|⚠️ 보통|⚠️ 높음",
-    "factors": ["요인1","요인2","요인3"]
+    "badgeText": "✅ 낮음|⚠️ 보통|⚠️ 높음|🚨 매우높음",
+    "factors": ["요인1","요인2","요인3","요인4"]
   },
   "market": {
-    "kospi": "숫자(예:5093.26)",
+    "kospi": "숫자만(예:5093.26)",
     "kospiChange": "▲/▼ 변화율 텍스트",
     "kospiColor": "var(--red)|var(--blue)|var(--green)",
-    "dow": "숫자(예:43428)",
+    "dow": "숫자만(예:43428)",
     "dowChange": "▲/▼ 변화율 텍스트",
     "dowColor": "var(--red)|var(--blue)|var(--green)",
-    "fx": "숫자(예:1503)",
+    "fx": "숫자만(예:1503)",
     "fxChange": "▲/▼ 변화 텍스트",
-    "oil": "$숫자(예:$89.4)",
+    "oil": "숫자만(예:89.4)",
     "oilChange": "▲/▼ 텍스트",
-    "gold": "$숫자(예:$3102)",
+    "gold": "숫자만(예:3102)",
     "goldChange": "▲/▼ 텍스트"
   }
 }
 
-news는 5개, 뉴스·리스크·시장 데이터 모두 오늘 기준 최신 실제 데이터로 채워줘.`;
+글로벌 리스크(risk)는 국제정세·전쟁·유가변동·미국 사모펀드 위기 등 글로벌 요인 기반.
+국내 위험지수(domestic)는 외국인 순매도·신용잔고·코스피 추이 등 국내 요인 기반.
+모든 데이터는 오늘 기준 최신 실제 데이터로 채워줘.`;
 
     const raw = await callClaude(masterPrompt,
       '당신은 한국 주식투자 전문 데이터 분석가입니다. 반드시 유효한 JSON만 응답하세요. 마크다운 코드블록 없이 순수 JSON만.',
@@ -826,9 +802,7 @@ news는 5개, 뉴스·리스크·시장 데이터 모두 오늘 기준 최신 �
     const cleaned = raw.replace(/```json|```/g,'').trim();
     const data = JSON.parse(cleaned);
 
-    // ── 뉴스 업데이트 ──
-
-    // ── 리스크 게이지 업데이트 ──
+    // ── 글로벌 리스크 게이지 업데이트 ──
     if (data.risk) {
       const r = data.risk;
       const score = Math.min(100, Math.max(0, parseInt(r.score)||78));
@@ -837,85 +811,80 @@ news는 5개, 뉴스·리스크·시장 데이터 모두 오늘 기준 최신 �
       document.getElementById('gNeedle').style.left = score + '%';
       document.getElementById('riskBadge').className = `badge ${r.badgeClass||'b-amber'}`;
       document.getElementById('riskBadge').textContent = r.badgeText || '⚠️ 보통';
-      document.getElementById('sum-risk').textContent = score + ' / 100';
-      document.getElementById('sum-risk').style.color =
-        score >= 70 ? 'var(--red)' : score >= 45 ? 'var(--amber)' : 'var(--green)';
-
-      // 리스크 요인 태그 업데이트
       if (r.factors && r.factors.length) {
-        const tagColors = ['b-red','b-red','b-amber','b-amber','b-slate'];
+        const tc = ['b-red','b-red','b-amber','b-amber','b-slate'];
         document.getElementById('riskTags').innerHTML =
-          r.factors.map((f,i) =>
-            `<span class="badge ${tagColors[i]||'b-slate'}">${f}</span>`
-          ).join('');
+          r.factors.map((f,i) => `<span class="badge ${tc[i]||'b-slate'}">${f}</span>`).join('');
       }
-
-      // 히스토리에 오늘 점수 추가
-      const history = JSON.parse(localStorage.getItem('riskHistory')||'[]');
-      const todayStr = new Date().toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'});
-      if (history.length && history[history.length-1].date === todayStr) {
-        history[history.length-1].score = score;
-      } else {
-        history.push({date: todayStr, score});
-        if (history.length > 30) history.shift();
-      }
-      localStorage.setItem('riskHistory', JSON.stringify(history));
-
-      // 자산배분 시나리오 자동 조정
-      const activeScen = document.querySelector('.scen-btn.active');
-      if (activeScen) {
-        const scenKey = score >= 70 ? 'war' : score >= 40 ? 'resolve' : 'resolve';
-        renderAlloc(scenKey);
-      }
+      const rh = JSON.parse(localStorage.getItem('riskHistory')||'[]');
+      const td = new Date().toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'});
+      if (rh.length && rh[rh.length-1].date === td) rh[rh.length-1].score = score;
+      else { rh.push({date:td, score}); if(rh.length>30) rh.shift(); }
+      localStorage.setItem('riskHistory', JSON.stringify(rh));
     }
 
     // ── 국내 위험지수 업데이트 ──
     if (data.domestic) {
       const dom = data.domestic;
-      const ds = Math.min(100,Math.max(0,parseInt(dom.score)||72));
+      const ds = Math.min(100, Math.max(0, parseInt(dom.score)||72));
       document.getElementById('dScore').textContent = ds;
-      document.getElementById('dLabel').textContent = dom.label||'보통';
-      document.getElementById('dNeedle').style.left = ds+'%';
+      document.getElementById('dLabel').textContent = dom.label || '보통';
+      document.getElementById('dNeedle').style.left = ds + '%';
       document.getElementById('domesticBadge').className = `badge ${dom.badgeClass||'b-amber'}`;
-      document.getElementById('domesticBadge').textContent = dom.badgeText||'⚠️ 보통';
-      if(dom.factors&&dom.factors.length){
-        const tc=['b-red','b-red','b-amber','b-slate'];
-        document.getElementById('domesticTags').innerHTML=dom.factors.map((f,i)=>`<span class="badge ${tc[i]||'b-slate'}">${f}</span>`).join('');
+      document.getElementById('domesticBadge').textContent = dom.badgeText || '⚠️ 보통';
+      if (dom.factors && dom.factors.length) {
+        const tc = ['b-red','b-red','b-amber','b-slate'];
+        document.getElementById('domesticTags').innerHTML =
+          dom.factors.map((f,i) => `<span class="badge ${tc[i]||'b-slate'}">${f}</span>`).join('');
       }
-      const dh=JSON.parse(localStorage.getItem('domesticHistory')||'[]');
-      const td=new Date().toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'});
-      if(dh.length&&dh[dh.length-1].date===td)dh[dh.length-1].score=ds; else{dh.push({date:td,score:ds});if(dh.length>30)dh.shift();}
-      localStorage.setItem('domesticHistory',JSON.stringify(dh));
+      const dh = JSON.parse(localStorage.getItem('domesticHistory')||'[]');
+      const td2 = new Date().toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'});
+      if (dh.length && dh[dh.length-1].date === td2) dh[dh.length-1].score = ds;
+      else { dh.push({date:td2, score:ds}); if(dh.length>30) dh.shift(); }
+      localStorage.setItem('domesticHistory', JSON.stringify(dh));
     }
 
-    // ── 요약 바 지표 업데이트 ──
+    // ── 요약 바 5개 지표 업데이트 ──
     if (data.market) {
       const m = data.market;
       if (m.kospi) {
         document.getElementById('sum-kospi').textContent = m.kospi;
         document.getElementById('sum-kospi').style.color = m.kospiColor||'var(--red)';
         document.getElementById('sum-kospi-sub').textContent = m.kospiChange||'';
-        const hk=document.getElementById('head-kospi');
-        if(hk){hk.textContent=m.kospi;hk.style.color=m.kospiColor||'var(--red)';}
+        const hk = document.getElementById('head-kospi');
+        if (hk) { hk.textContent = m.kospi; hk.style.color = m.kospiColor||'var(--red)'; }
       }
-      if(m.dow){document.getElementById('sum-dow').textContent=m.dow;document.getElementById('sum-dow').style.color=m.dowColor||'var(--blue)';document.getElementById('sum-dow-sub').textContent=m.dowChange||'';}
-      if(m.fx){document.getElementById('sum-fx').textContent=m.fx;document.getElementById('sum-fx-sub').textContent=m.fxChange||'';}
-      if(m.oil){document.getElementById('sum-oil').textContent=m.oil;document.getElementById('sum-oil-sub').textContent=m.oilChange||'';}
-      if(m.gold){document.getElementById('sum-gold').textContent=m.gold;document.getElementById('sum-gold-sub').textContent=m.goldChange||'';}
+      if (m.dow) {
+        document.getElementById('sum-dow').textContent = m.dow;
+        document.getElementById('sum-dow').style.color = m.dowColor||'var(--blue)';
+        document.getElementById('sum-dow-sub').textContent = m.dowChange||'';
+      }
+      if (m.fx) {
+        document.getElementById('sum-fx').textContent = m.fx;
+        document.getElementById('sum-fx-sub').textContent = m.fxChange||'';
+      }
+      if (m.oil) {
+        document.getElementById('sum-oil').textContent = m.oil;
+        document.getElementById('sum-oil-sub').textContent = m.oilChange||'';
+      }
+      if (m.gold) {
+        document.getElementById('sum-gold').textContent = m.gold;
+        document.getElementById('sum-gold-sub').textContent = m.goldChange||'';
+      }
     }
-    autoRecommendAlloc();
 
+    // ── 두 지수 기반 자동 자산배분 재권고 ──
+    autoRecommendAlloc();
     showToast('✅ 모든 데이터가 실시간으로 업데이트됐어요!');
 
   } catch(e) {
-    // 파싱 실패 시 뉴스만 샘플로 복구
-      showToast('일부 데이터 업데이트 실패. 네트워크를 확인해주세요.');
+    console.error('refreshAll 오류:', e);
+    showToast('데이터 업데이트 실패. 잠시 후 다시 시도해주세요.');
   }
 
   btn.classList.remove('loading');
   btn.innerHTML = '🔄 업데이트';
 }
-
 // 토스트 알림
 function showToast(msg) {
   const existing = document.getElementById('toast');
@@ -1045,7 +1014,7 @@ function getOfflineReply(text, portfolio) {
   if(t.includes('isa') || t.includes('계좌'))
     return 'ISA 계좌는 세금 혜택이 있어 단기 하락으로 해지하면 혜택을 잃게 돼요. 삼성화재우선주·현대차우선주는 배당주로 장기 보유에 적합하니 현재 상황에서 ISA 유지를 추천드려요. (API 키 입력 시 더 상세한 분석 가능)';
   if(t.includes('요약') || t.includes('3줄'))
-    return '① 글로벌 리스크 78/100 + 국내 위험지수 72/100 — 둘 다 高위험 구간. ② 자산배분: 현금45%·금25% 최대 방어 포지션 권고. ③ 외국인 대규모 이탈 지속 — 추가 하락 경계. (API 키 입력 시 실시간 분석 가능)';
+    return '① 이란 전쟁으로 코스피 12% 급락, 서킷브레이커 발동. ② 금·방산주만 역행 강세, 에너지화학·반도체 직격탄. ③ 외국인 대규모 이탈 지속, 단기 추가 하락 가능성 주시 필요. (API 키 입력 시 실시간 뉴스 기반 분석 가능)';
   return `"${text}"에 대해 답변드릴게요. 현재 이란 전쟁으로 고위험 구간이라 방어적 포지션이 중요해요. Claude API 키를 입력하시면 더 정확하고 개인화된 분석을 받으실 수 있어요.`;
 }
 
